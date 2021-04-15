@@ -12,6 +12,25 @@ type (
 	Start struct{}
 
 	// MakeChancellor is an Event type.
-	// MakeChancellor requests that player 'C' is made chancellor
-	MakeChancellor struct{ C int8 }
+	// MakeChancellor requests that player 'Proposal' is made chancellor
+	// under Caller's presidency
+	MakeChancellor struct {
+		Caller   int8
+		Proposal int8
+	}
+
+	// GovernmentVote is an Event type.
+	// GovernmentVote says that player 'Caller' has voted 'Vote'
+	GovernmentVote struct {
+		Caller int8
+		Vote   Vote
+	}
+
+	// PolicyDiscard is an Event type.
+	// PolicyDiscard says that player 'Caller' has decided to discard the policy card identified
+	// by Selection
+	PolicyDiscard struct {
+		Caller    int8
+		Selection uint8
+	}
 )
