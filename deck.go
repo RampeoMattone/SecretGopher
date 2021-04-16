@@ -2,12 +2,6 @@ package SecretGopher
 
 import "math/rand"
 
-// Game is the interface to the event handler
-type Game struct {
-	In  chan<- Event
-	Out <-chan Output
-}
-
 type Deck struct {
 	d [17]Policy // d is the stack of cards
 	p uint8      // p is the position within the stack
@@ -40,7 +34,7 @@ func (d Deck) draw(n uint8) []Policy {
 		r[i] = d.d[d.p]
 		d.p++
 	}
-	// "If there are fewer than three tiles remaining In the policy deck at the end of a Legislative Session,
+	// "If there are fewer than three tiles remaining in the policy deck at the end of a Legislative Session,
 	// they are shuffled with the Discard pile to create a new policy deck. Unused policy tiles are not revealed."
 	if d.p > 14 {
 		d.shuffle()

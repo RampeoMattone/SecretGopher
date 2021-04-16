@@ -7,12 +7,15 @@ const (
 type state uint8 // state enumerates the possible round states
 
 const (
-	waitingPlayers      state = iota // waitingPlayers means the game is waiting a Start or an AddPlayer Event
-	chancellorCandidacy              // chancellorCandidacy means the game is waiting a MakeChancellor Event
-	governmentElection               // governmentElection means the game is waiting a GovernmentVote Event
-	presidentTurn                    // presidentTurn means the game is waiting a PolicyDiscard Event from the president
-	chancellorTurn                   // chancellorTurn means the game is waiting a PolicyDiscard Event from the chancellor
-
+	waitingPlayers        state = iota // waitingPlayers means the game is waiting a Start or an AddPlayer Event
+	chancellorCandidacy                // chancellorCandidacy means the game is waiting a MakeChancellor Event
+	governmentElection                 // governmentElection means the game is waiting a GovernmentVote Event
+	presidentLegislation               // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	chancellorLegislation              // chancellorLegislation means the game is waiting a PolicyDiscard Event from the chancellor
+	specialPeek// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	specialInvestigate// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	specialElection// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	specialExecution// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
 )
 
 // Role is used to represent the role of a player
@@ -39,4 +42,33 @@ type Policy bool
 const (
 	LiberalPolicy Policy = true  // LiberalPolicy means the policy is in favor of the liberal party
 	FascistPolicy Policy = false // FascistPolicy means the policy is in favor of the fascist party
+)
+
+
+type SpecialPowers int8
+
+const (
+	Nothing SpecialPowers = iota
+	Peek
+	Investigate
+	Election
+	Execution
+)
+
+// powersTable is used to figure out what power needs to be activated for a specific round
+var powersTable = [3][6]SpecialPowers{
+	{Nothing, Nothing, Peek, Execution, Execution, Nothing},
+	{Nothing, Investigate, Election, Execution, Execution, Nothing},
+	{Investigate, Investigate, Election, Execution, Execution, Nothing},
+}
+
+// GameEnding is used to signal if the game ended and how
+type GameEnding int8
+
+const (
+	StillRunning	GameEnding = iota
+	LiberalPolicyWin    			 // LiberalPolicyWin means 5 liberal policies have been enacted
+	LiberalExecutionWin             // LiberalExecutionWin means hitler was killed
+	FascistPolicyWin                // FascistPolicyWin means 6 fascist policies have been enacted
+	FascistElectionWin              // FascistElectionWin means hitler was elected as chancellor
 )

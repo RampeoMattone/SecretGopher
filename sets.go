@@ -3,32 +3,32 @@ package SecretGopher
 // Set type is a type alias of `map[interface{}]struct{}`
 type Set map[interface{}]struct{}
 
-// Add Adds an element to the set
-func (s Set) Add(elem interface{}) {
+// add Adds an element to the set
+func (s Set) add(elem interface{}) {
 	s[elem] = struct{}{}
 }
 
-// AddAll Adds a list of elements to the set
-func (s Set) AddAll(elem ...interface{}) {
+// addAll Adds a list of elements to the set
+func (s Set) addAll(elem ...interface{}) {
 	for e := range elem {
 		s[e] = struct{}{}
 	}
 }
 
-// Remove Removes an element from the set
-func (s Set) Remove(elem interface{}) {
+// remove Removes an element from the set
+func (s Set) remove(elem interface{}) {
 	delete(s, elem)
 }
 
-// Clear Removes an element from the set
-func (s Set) Clear() {
+// clear Removes an element from the set
+func (s Set) clear() {
 	for e := range s {
-		s.Remove(e)
+		s.remove(e)
 	}
 }
 
-// Has Returns a boolean value describing if the element exists in the set
-func (s Set) Has(elem interface{}) bool {
+// has Returns a boolean value describing if the element exists in the set
+func (s Set) has(elem interface{}) bool {
 	_, ok := s[elem]
 	return ok
 }

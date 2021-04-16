@@ -33,4 +33,13 @@ type (
 		Caller    int8
 		Selection uint8
 	}
+
+	// SpecialPower is an Event type.
+	// SpecialPower says the Power being used by 'Caller' under
+	// the Power 'field' and the eventual selection of entity in the 'Selection' field
+	SpecialPower struct {
+		Caller int8
+		Power SpecialPowers
+		Selection int8
+	}
 )
