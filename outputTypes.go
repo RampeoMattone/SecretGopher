@@ -14,9 +14,9 @@ type (
 	// Ok reports a successful interaction and contains information about how the game reacted
 	Ok struct{ Info interface{} }
 
-	// General is an Ok type.
-	// General means the state of the game did not change
-	General struct{}
+	// VoteRegistered is an Ok type.
+	// VoteRegistered means the vote was valid but the state of the game did not change
+	VoteRegistered struct{}
 
 	// PlayerRegistered is an Ok type.
 	// PlayerRegistered means a player was registered.

@@ -13,9 +13,14 @@ func newDeck() deck {
 		p: 0,
 		d: [17]Policy{
 			LiberalPolicy, LiberalPolicy, LiberalPolicy, LiberalPolicy, LiberalPolicy, LiberalPolicy,
+			FascistPolicy, FascistPolicy, FascistPolicy, FascistPolicy, FascistPolicy, FascistPolicy,
+			FascistPolicy, FascistPolicy, FascistPolicy, FascistPolicy, FascistPolicy,
 		},
 	}
 	d.shuffle()
+	for i, policy := range d.d {
+		print(i, policy, "\n")
+	} // todo remove
 	return d
 }
 

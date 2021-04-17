@@ -27,6 +27,7 @@ type gameData struct {
 	oldGov        set
 	investigated  set
 	votes         []Vote
+	voted		  int8
 	killed        []int8
 	policyChoice  []Policy
 	eTracker      int8
@@ -190,6 +191,7 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 		killed:        make([]int8, 0, 2),
 		//investigated:  // initialized with Start
 		//votes:         // initialized with Start
+		voted: 0,
 		//policyChoice:  // initialized when entering presidentLegislation
 		eTracker: 0,
 		fTracker: 0,
@@ -215,7 +217,7 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 			if g.state == waitingPlayers {
 				if g.players >= 5 {
 					g.roles = make([]Role, g.players)    // initialize roles to the proper size
-					g.votes = make([]Vote, 0, g.players) // initialize votes to the proper size
+					g.votes = make([]Vote, g.players) // initialize votes to the proper size
 					g.oldGov = make(set, 2)              // initialize oldGov to the proper size
 					g.deck = newDeck()                   // initialize deck and shuffle it
 
@@ -262,7 +264,8 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 					if !g.oldGov.has(e.Proposal) {
 						g.chancellor = e.Proposal
 						g.state = governmentElection
-						g.votes = make([]Vote, 0, g.players) // reset votes
+						g.votes = make([]Vote, g.players) // reset votes
+						g.voted = 0
 						out <- Ok{Info: ElectionStart(g.shareState())} // say the chancellor registration was successful
 					} else {
 						out <- Error{Err: Invalid{}} // send out error
@@ -281,9 +284,10 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 				if v := e.Vote; v == Ja || v == Nein {
 					// if the user hasn't voted yet
 					if g.votes[e.Caller] == NoVote {
+						g.voted++
 						g.votes[e.Caller] = v // register the vote
 						// if all players have cast a vote
-						if int8(len(g.votes)) == g.players {
+						if g.voted == g.players {
 							// add up the votes
 							var r int8 = 0
 							for _, v := range g.votes {
@@ -323,7 +327,7 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 								}
 							}
 						} else {
-							out <- Ok{Info: General{}} // vote has been registered
+							out <- Ok{Info: VoteRegistered{}} // vote has been registered
 						}
 					} else {
 						// unauthorized vote as user has already voted
