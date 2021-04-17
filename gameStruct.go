@@ -16,9 +16,8 @@ type GameState struct {
 	President       int8     // current President (elected or candidate)
 	Chancellor      int8     // current President (elected or candidate)
 	Roles           []Role   // array that maps a player's index to his role
-	Killed			Set		 // Set that memorizes the ids of dead players
+	Votes			[]Vote
+	Killed			[]int8 // set that memorizes the ids of dead players
 }
 
-// todo killed is not shared normally, find a way to do it
-// todo gamehandler must become a method and repeated code needs to be fixed
 // todo add veto check

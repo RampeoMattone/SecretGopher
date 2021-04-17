@@ -26,24 +26,24 @@ type (
 	// GameStart is an Ok type.
 	// GameStart means the game has started.
 	// GameStart also carries a pointer to a GameState
-	GameStart *GameState
+	GameStart GameState
 
 	// NextPresident is an Ok type.
 	// NextPresident that a round ended and a new president candidate was selected.
 	// NextPresident also carries a pointer to a GameState
-	NextPresident *GameState
+	NextPresident GameState
 
 	// ElectionStart is an Ok type.
 	// ElectionStart that a round ended and a new president candidate was selected.
 	// ElectionStart also carries a pointer to a GameState
-	ElectionStart *GameState
+	ElectionStart GameState
 
 	// LegislationPresident is an Ok type.
-	// LegislationPresident means the voting phase has ended successfully and the legislative session has started
+	// LegislationPresident means the voting phase has ended successfully and the legislative session has started.
 	// LegislationPresident also carries a pointer to a GameState
 	LegislationPresident struct {
 		Hand []Policy
-		State *GameState
+		State GameState
 	}
 
 	// LegislationChancellor is an Ok type.
@@ -51,7 +51,7 @@ type (
 	// LegislationChancellor also carries a pointer to a GameState
 	LegislationChancellor struct {
 		Hand []Policy
-		State *GameState
+		State GameState
 	}
 
 	// PolicyEnaction is an Ok type.
@@ -61,7 +61,7 @@ type (
 	PolicyEnaction struct {
 		Enacted Policy
 		SpecialPower SpecialPowers
-		State *GameState
+		State GameState
 	}
 
 	// SpecialPowerFeedback is an Ok type.
@@ -69,14 +69,18 @@ type (
 	// The Feedback field will carry a Policy slice in response to a Peek power, or a Role value in response to an Investigate power
 	SpecialPowerFeedback struct {
 		Feedback interface{}
-		State *GameState
+		State GameState
 	}
+
+	// VetoRequest is an Ok type.
+	// VetoRequest means a veto is possible and the handler is now waiting for one or more VetoResponse inputs.
+	VetoRequest GameState
 
 	// GameEnd is an Ok type.
 	// GameEnd means a condition to end the game has been met. the reason for the ending is in the field 'Why'
 	// GameEnd also carries a pointer to a GameState
 	GameEnd struct {
 		Why GameEnding
-		State  *GameState
+		State  GameState
 	}
 )

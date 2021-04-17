@@ -12,10 +12,13 @@ const (
 	governmentElection                 // governmentElection means the game is waiting a GovernmentVote Event
 	presidentLegislation               // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
 	chancellorLegislation              // chancellorLegislation means the game is waiting a PolicyDiscard Event from the chancellor
-	specialPeek// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
-	specialInvestigate// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
-	specialElection// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
-	specialExecution// presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	specialPeek                        // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	specialInvestigate                 // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	specialElection                    // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	specialExecution                   // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	vetoChancellor
+	vetoPresident
+	gameEnd
 )
 
 // Role is used to represent the role of a player
@@ -44,7 +47,6 @@ const (
 	FascistPolicy Policy = false // FascistPolicy means the policy is in favor of the fascist party
 )
 
-
 type SpecialPowers int8
 
 const (
@@ -66,9 +68,15 @@ var powersTable = [3][6]SpecialPowers{
 type GameEnding int8
 
 const (
-	StillRunning	GameEnding = iota
-	LiberalPolicyWin    			 // LiberalPolicyWin means 5 liberal policies have been enacted
-	LiberalExecutionWin             // LiberalExecutionWin means hitler was killed
-	FascistPolicyWin                // FascistPolicyWin means 6 fascist policies have been enacted
-	FascistElectionWin              // FascistElectionWin means hitler was elected as chancellor
+	StillRunning        GameEnding = iota
+	LiberalPolicyWin               // LiberalPolicyWin means 5 liberal policies have been enacted
+	LiberalExecutionWin            // LiberalExecutionWin means hitler was killed
+	FascistPolicyWin               // FascistPolicyWin means 6 fascist policies have been enacted
+	FascistElectionWin             // FascistElectionWin means hitler was elected as chancellor
 )
+
+type ErrorType int8
+const (
+
+)
+

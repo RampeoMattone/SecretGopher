@@ -34,12 +34,22 @@ type (
 		Selection uint8
 	}
 
+	// VetoResponse is an Event type.
+	// VetoResponse reports what 'Caller' has decided to do in front of a veto.
+	// VetoResponse needs to first be sent by the chancellor and then, if necessary, by the president
+	// The handler will answer to the event with either a new VetoRequest (signaling that it needs confirmation from the president)
+	// or with other types that signal the success or failure of the veto and its implications
+	VetoResponse struct {
+		Caller   int8
+		Approves bool
+	}
+
 	// SpecialPower is an Event type.
 	// SpecialPower says the Power being used by 'Caller' under
 	// the Power 'field' and the eventual selection of entity in the 'Selection' field
 	SpecialPower struct {
-		Caller int8
-		Power SpecialPowers
+		Caller    int8
+		Power     SpecialPowers
 		Selection int8
 	}
 )
