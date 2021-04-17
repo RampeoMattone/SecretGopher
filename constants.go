@@ -76,7 +76,5 @@ const (
 )
 
 type ErrorType int8
-const (
 
-)
-
+const ()

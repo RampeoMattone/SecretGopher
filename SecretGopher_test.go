@@ -63,7 +63,7 @@ func TestHandling(t *testing.T) {
 		}
 	}
 
-	// test
+	// Start the game
 	G.in <- Start{}
 	o = <-G.out
 	var p, c int8
@@ -86,7 +86,7 @@ func TestHandling(t *testing.T) {
 		t.Error("Got Error - expected Gamestart")
 	}
 
-	// test
+	// select the first chancellor (we select the player after the president)
 	c = (p + 1) % 10
 	G.in <- MakeChancellor{Caller: p, Proposal: c}
 	o = <-G.out
@@ -108,7 +108,7 @@ func TestHandling(t *testing.T) {
 		t.Error("Got Error - expected ElectionStart")
 	}
 
-	// test
+	// send 9 out of 10 votes for yes to the gov.
 	for i := 0; i < 9; i++ {
 		G.in <- GovernmentVote{Caller: int8(i), Vote: Ja}
 		o = <-G.out
@@ -117,7 +117,7 @@ func TestHandling(t *testing.T) {
 			info := o.(Ok).Info
 			switch info.(type) {
 			case VoteRegistered:
-					t.Logf("Got VoteRegistered on player: %d", i)
+				t.Logf("Got VoteRegistered on player: %d", i)
 			default:
 				t.Error("Got wrong Info")
 			}
@@ -125,6 +125,8 @@ func TestHandling(t *testing.T) {
 			t.Error("Got wrong event")
 		}
 	}
+
+	//send the last vote to elect the gov.
 	G.in <- GovernmentVote{Caller: 9, Vote: Ja}
 	o = <-G.out
 	switch o.(type) {
@@ -132,8 +134,9 @@ func TestHandling(t *testing.T) {
 		info := o.(Ok).Info
 		switch info.(type) {
 		case LegislationPresident:
-			t.Log("Got LegislationPresident on last player", info.(LegislationPresident))
-			if info.(LegislationPresident).State.Roles[c] == Hitler {
+			info := info.(LegislationPresident)
+			t.Log("Got LegislationPresident on last player", info)
+			if info.State.Roles[c] == Hitler {
 				t.Error("Hitler is Chancellor. game should have ended")
 			}
 		case GameEnd:
@@ -147,5 +150,74 @@ func TestHandling(t *testing.T) {
 		}
 	case Error:
 		t.Error("Got error")
+	}
+
+	// test the policy discard system for the president (we discard the middle card)
+	G.in <- PolicyDiscard{Caller: p, Selection: 1}
+	o = <-G.out
+	switch o.(type) {
+	case Ok:
+		info := o.(Ok).Info
+		switch info.(type) {
+		case LegislationChancellor:
+			info := info.(LegislationChancellor)
+			t.Log("Got expected - LegislationChancellor\n", info)
+		default:
+			t.Error("Got wrong Info")
+		}
+	case Error:
+		t.Error("Got error")
+	}
+	// test the policy discard system for the chancellor (we discard the first card)
+	G.in <- PolicyDiscard{Caller: c, Selection: 0}
+	o = <-G.out
+	var enacted Policy
+	switch o.(type) {
+	case Ok:
+		info := o.(Ok).Info
+		switch info.(type) {
+		case PolicyEnaction:
+			info := info.(PolicyEnaction)
+			enacted = info.Enacted
+			t.Log("Got expected - PolicyEnaction\n", info)
+		default:
+			t.Error("Got wrong Info", info)
+		}
+	case Error:
+		t.Error("Got error")
+	}
+	// test the special power system
+	if enacted == FascistPolicy {
+		G.in <- SpecialPower{Caller: p, Selection: 0, Power: Investigate}
+		o = <-G.out
+		switch o.(type) {
+		case Ok:
+			info := o.(Ok).Info
+			switch info.(type) {
+			case SpecialPowerFeedback:
+				info := info.(SpecialPowerFeedback)
+				t.Log("Got expected - SpecialPowerFeedback\n", info)
+			default:
+				t.Error("Got wrong Info", info)
+			}
+		case Error:
+			t.Error("Got error")
+		}
+	}
+	// test term limits for government
+	c, p = p, c
+	G.in <- MakeChancellor{Caller: p, Proposal: c}
+	o = <-G.out
+	switch o.(type) {
+	case Ok:
+		t.Error("Got Ok - expected error: Invalid")
+	case Error:
+		err := o.(Error).Err
+		switch err.(type) {
+		case Invalid:
+			t.Log("Got Expected error - Invalid")
+		default:
+			t.Error("Got wrong Error")
+		}
 	}
 }

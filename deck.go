@@ -18,14 +18,11 @@ func newDeck() deck {
 		},
 	}
 	d.shuffle()
-	for i, policy := range d.d {
-		print(i, policy, "\n")
-	} // todo remove
 	return d
 }
 
 // shuffle shuffles the elements of the deck pseudorandomically
-func (d deck) shuffle() {
+func (d *deck) shuffle() {
 	d.p = 0
 	rand.Shuffle(17, func(i, j int) {
 		d.d[i], d.d[j] = d.d[j], d.d[i]
@@ -33,7 +30,7 @@ func (d deck) shuffle() {
 }
 
 // draw draws the top n cards from the deck, making sure to move them away and not draw them again
-func (d deck) draw(n uint8) []Policy {
+func (d *deck) draw(n uint8) []Policy {
 	var r = make([]Policy, n)
 	for i := uint8(0); i < n; i++ {
 		r[i] = d.d[d.p]
@@ -48,7 +45,7 @@ func (d deck) draw(n uint8) []Policy {
 }
 
 // peek reveals the top 3 cards from the deck, making sure to leave the deck unaltered
-func (d deck) peek() [3]Policy {
+func (d *deck) peek() [3]Policy {
 	var r = [3]Policy{}
 	for i := uint8(0); i < 3; i++ {
 		r[i] = d.d[d.p+i]

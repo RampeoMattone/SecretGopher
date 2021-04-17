@@ -24,10 +24,10 @@ type gameData struct {
 	chancellor    int8
 	roles         []Role
 	nextPresident int8
-	oldGov        set
-	investigated  set
+	oldGov        []int8
+	investigated  []int8
 	votes         []Vote
-	voted		  int8
+	voted         int8
 	killed        []int8
 	policyChoice  []Policy
 	eTracker      int8
@@ -45,7 +45,7 @@ func search(arr []int8, elem int8) bool {
 	return false
 }
 
-func (g gameData) gameOver() GameEnding {
+func (g *gameData) gameOver() GameEnding {
 	// check the fascist policies
 	if g.fTracker == 6 {
 		return FascistPolicyWin
@@ -70,7 +70,7 @@ func (g gameData) gameOver() GameEnding {
 	}
 }
 
-func (g gameData) enactPolicyInactive() SpecialPowers {
+func (g *gameData) enactPolicyInactive() SpecialPowers {
 	s := Nothing // special powers checked only when the policy is fascist
 	switch g.policyChoice[0] {
 	case LiberalPolicy:
@@ -89,13 +89,13 @@ func (g gameData) enactPolicyInactive() SpecialPowers {
 	return s
 }
 
-func (g gameData) enactPolicyActive(out chan<- Output) {
+func (g *gameData) enactPolicyActive(out chan<- Output) {
 	s := g.enactPolicyInactive() // s is the special power
 	// checks if the game is over (if the policy limit for a party has been reached)
 	if o := g.gameOver(); o != StillRunning {
 		g.state = gameEnd
 		out <- Ok{Info: GameEnd{
-			Why: o,
+			Why:   o,
 			State: g.shareState(),
 		}}
 		return
@@ -122,11 +122,11 @@ func (g gameData) enactPolicyActive(out chan<- Output) {
 	out <- Ok{Info: PolicyEnaction{
 		Enacted:      g.policyChoice[0],
 		SpecialPower: s,
-		State: g.shareState(),
+		State:        g.shareState(),
 	}}
 }
 
-func (g gameData) inactiveGov(out chan<- Output) {
+func (g *gameData) inactiveGov(out chan<- Output) {
 	g.state = chancellorCandidacy // next step is to start a new round
 	// set the next president in line
 	g.president = g.nextPresident
@@ -143,7 +143,7 @@ func (g gameData) inactiveGov(out chan<- Output) {
 		if o := g.gameOver(); o != StillRunning {
 			g.state = gameEnd
 			out <- Ok{Info: GameEnd{
-				Why: o,
+				Why:   o,
 				State: g.shareState(),
 			}}
 			return
@@ -153,7 +153,7 @@ func (g gameData) inactiveGov(out chan<- Output) {
 		out <- Ok{Info: PolicyEnaction{
 			Enacted:      g.policyChoice[0], // election failed
 			SpecialPower: Nothing,
-			State: g.shareState(),
+			State:        g.shareState(),
 		}}
 	} else {
 		g.eTracker++
@@ -163,7 +163,7 @@ func (g gameData) inactiveGov(out chan<- Output) {
 	}
 }
 
-func (g gameData) shareState() GameState {
+func (g *gameData) shareState() GameState {
 	return GameState{
 		ElectionTracker: g.eTracker,
 		FascistTracker:  g.fTracker,
@@ -177,9 +177,9 @@ func (g gameData) shareState() GameState {
 }
 
 // handleGame handles the game events.
-func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
+func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 	defer close(out)
-	g = gameData{
+	g = &gameData{
 		state:   waitingPlayers,
 		players: 0,
 		//deck:          // initialized with Start
@@ -187,8 +187,8 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 		chancellor: NotSet,
 		//roles:         // initialized with Start
 		nextPresident: NotSet,
-		oldGov:        make(set, 2),
-		killed:        make([]int8, 0, 2),
+		oldGov:        make([]int8, 2),
+		killed:        make([]int8, 2),
 		//investigated:  // initialized with Start
 		//votes:         // initialized with Start
 		voted: 0,
@@ -216,10 +216,9 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 			// if the game was accepting players
 			if g.state == waitingPlayers {
 				if g.players >= 5 {
-					g.roles = make([]Role, g.players)    // initialize roles to the proper size
+					g.roles = make([]Role, g.players) // initialize roles to the proper size
 					g.votes = make([]Vote, g.players) // initialize votes to the proper size
-					g.oldGov = make(set, 2)              // initialize oldGov to the proper size
-					g.deck = newDeck()                   // initialize deck and shuffle it
+					g.deck = newDeck()                // initialize deck and shuffle it
 
 					g.roles[rand.Intn(int(g.players))] = Hitler // set one player as Hitler
 					var nF int                                  // number of fascists based on the lobby size
@@ -228,10 +227,10 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 						g.investigated = nil
 						nF = 1
 					case 7, 8:
-						g.investigated = make(set, 1)
+						g.investigated = make([]int8, 0, 1)
 						nF = 2
 					case 9, 10:
-						g.investigated = make(set, 2)
+						g.investigated = make([]int8, 0, 2)
 						nF = 3
 					}
 					// assign nF FascistParty roles randomly
@@ -261,7 +260,7 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 			if g.state == chancellorCandidacy {
 				e := event.(MakeChancellor)
 				if e.Caller == g.president {
-					if !g.oldGov.has(e.Proposal) {
+					if !search(g.oldGov, e.Proposal) {
 						g.chancellor = e.Proposal
 						g.state = governmentElection
 						g.votes = make([]Vote, g.players) // reset votes
@@ -301,13 +300,12 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 							// if r is greater than 0 the election has passed
 							if r > 0 {
 								// update the term limits for the next election
-								g.oldGov.clear()
-								g.oldGov.addAll(g.president, g.chancellor)
+								g.oldGov[0], g.oldGov[1] = g.president, g.chancellor
 
 								// checks if the game is over (if hitler is chancellor)
 								if o := g.gameOver(); o != StillRunning {
 									out <- Ok{Info: GameEnd{
-										Why: o,
+										Why:   o,
 										State: g.shareState(),
 									}}
 									return // end the game
@@ -317,7 +315,7 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 								// send a successful election result and notify the cards the president has to choose from
 								// in the field 'Hand'
 								out <- Ok{Info: LegislationPresident{
-									Hand: append([]Policy{}, g.policyChoice...), // clone the policy choice
+									Hand:  append([]Policy{}, g.policyChoice...), // clone the policy choice
 									State: g.shareState(),
 								}}
 							} else {
@@ -345,11 +343,12 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 			case presidentLegislation:
 				if e.Caller == g.president {
 					if s := e.Selection; s < 3 {
+						g.state = chancellorLegislation
 						g.policyChoice = append(g.policyChoice[:s], g.policyChoice[s+1:]...)
 						// send a successful result and notify the chancellor has to choose from
 						// the field 'Hand'
 						out <- Ok{Info: LegislationChancellor{
-							Hand: append([]Policy{}, g.policyChoice...), // clone the policy choice
+							Hand:  append([]Policy{}, g.policyChoice...), // clone the policy choice
 							State: g.shareState(),
 						}}
 					}
@@ -365,39 +364,10 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 							g.state = vetoChancellor
 							out <- Ok{Info: VetoRequest(g.shareState())}
 						} else {
-							s := g.enactPolicyInactive() // s is the special power
-							// checks if the game is over (if the policy limit for a party has been reached)
-							if o := g.gameOver(); o != StillRunning {
-								out <- Ok{Info: GameEnd{
-									Why: o,
-									State: g.shareState(),
-								}}
-								return
+							g.enactPolicyActive(out)
+							if g.state == gameEnd {
+								return // stops the handler
 							}
-							// update the state of the game in accordance to the special power
-							switch s {
-							case Nothing:
-								g.state = chancellorCandidacy
-								// set the next president in line
-								g.president = g.nextPresident
-								// calculate the next president in a circular fashion
-								g.nextPresident = (g.president + 1) % g.players
-							case Execution:
-								g.state = specialExecution
-							case Election:
-								g.state = specialElection
-							case Investigate:
-								g.state = specialInvestigate
-							case Peek:
-								g.state = specialPeek
-							}
-
-							// send a successful result for the enaction of a policy
-							out <- Ok{Info: PolicyEnaction{
-								Enacted:      g.policyChoice[0],
-								SpecialPower: s,
-								State: g.shareState(),
-							}}
 						}
 					}
 				} else {
@@ -445,9 +415,14 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 				switch e.Power {
 				case Peek:
 					if g.state == specialPeek {
+						g.state = chancellorCandidacy
+						// set the next president in line
+						g.president = g.nextPresident
+						// calculate the next president in a circular fashion
+						g.nextPresident = (g.president + 1) % g.players
 						out <- Ok{Info: SpecialPowerFeedback{
 							Feedback: g.deck.peek(),
-							State: g.shareState(),
+							State:    g.shareState(),
 						}} // send out error
 					} else {
 						out <- Error{Err: WrongPhase{}} // send out error
@@ -460,7 +435,7 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 							g.state = chancellorCandidacy
 							out <- Ok{Info: SpecialPowerFeedback{
 								Feedback: g.deck.peek(),
-								State: g.shareState(),
+								State:    g.shareState(),
 							}}
 						} else {
 							out <- Error{Err: Invalid{}} // send out error
@@ -471,6 +446,10 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 				case Execution:
 					if g.state == specialExecution {
 						if e.Selection < g.players && !search(g.killed, e.Selection) {
+							// set the next president in line
+							g.president = g.nextPresident
+							// calculate the next president in a circular fashion
+							g.nextPresident = (g.president + 1) % g.players
 							g.killed[len(g.killed)] = e.Selection
 							g.state = chancellorCandidacy
 							out <- Ok{Info: SpecialPowerFeedback{
@@ -484,12 +463,16 @@ func (g gameData) handleGame(in <-chan Event, out chan<- Output) {
 					}
 				case Investigate:
 					if g.state == specialInvestigate {
-						if e.Selection < g.players && !g.investigated.has(e.Selection) {
-							g.investigated.add(e.Selection)
+						if e.Selection < g.players && !search(g.investigated, e.Selection) {
+							g.investigated = append(g.investigated, e.Selection)
 							g.state = chancellorCandidacy
+							// set the next president in line
+							g.president = g.nextPresident
+							// calculate the next president in a circular fashion
+							g.nextPresident = (g.president + 1) % g.players
 							out <- Ok{Info: SpecialPowerFeedback{
 								Feedback: g.roles[e.Selection],
-								State: g.shareState(),
+								State:    g.shareState(),
 							}}
 						} else {
 							out <- Error{Err: Invalid{}} // send out error

@@ -5,7 +5,7 @@ Output events convention:
 The library shall use types as a way to communicate a meaningful change in state.
 The library shall also ship a copy of its state within those events, such that a state reconstruction is possible from the outside.
 The library may omit a gamestate event and use a slimmer Ok type to signal that the state did not change meaningfully
- */
+*/
 
 type (
 	// Output is a void interface. it's only used to simplify reading code
@@ -42,7 +42,7 @@ type (
 	// LegislationPresident means the voting phase has ended successfully and the legislative session has started.
 	// LegislationPresident also carries a pointer to a GameState
 	LegislationPresident struct {
-		Hand []Policy
+		Hand  []Policy
 		State GameState
 	}
 
@@ -50,7 +50,7 @@ type (
 	// LegislationChancellor means the chancellor has to select a policy to enact
 	// LegislationChancellor also carries a pointer to a GameState
 	LegislationChancellor struct {
-		Hand []Policy
+		Hand  []Policy
 		State GameState
 	}
 
@@ -59,9 +59,9 @@ type (
 	// If a special power has been activated, the SpecialPower field will let you know
 	// PolicyEnaction also carries a pointer to a GameState
 	PolicyEnaction struct {
-		Enacted Policy
+		Enacted      Policy
 		SpecialPower SpecialPowers
-		State GameState
+		State        GameState
 	}
 
 	// SpecialPowerFeedback is an Ok type.
@@ -69,7 +69,7 @@ type (
 	// The Feedback field will carry a Policy slice in response to a Peek power, or a Role value in response to an Investigate power
 	SpecialPowerFeedback struct {
 		Feedback interface{}
-		State GameState
+		State    GameState
 	}
 
 	// VetoRequest is an Ok type.
@@ -80,7 +80,7 @@ type (
 	// GameEnd means a condition to end the game has been met. the reason for the ending is in the field 'Why'
 	// GameEnd also carries a pointer to a GameState
 	GameEnd struct {
-		Why GameEnding
-		State  GameState
+		Why   GameEnding
+		State GameState
 	}
 )
