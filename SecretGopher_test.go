@@ -8,6 +8,7 @@ import (
 
 func init() {
 	rand.Seed(time.Now().Unix())
+	InitHandlerGroup(1)
 }
 
 func TestNewGame(t *testing.T) {
@@ -26,8 +27,7 @@ func TestHandling(t *testing.T) {
 	G := NewGame()
 	// Adds 10 player
 	for i := 0; i < 10; i++ {
-		G.in <- AddPlayer{}
-		o := <-G.out
+		o := G.AddPlayer()
 		switch o.(type) {
 		case Ok:
 			info := o.(Ok).Info
@@ -48,8 +48,7 @@ func TestHandling(t *testing.T) {
 	}
 
 	// Adds an 11th player
-	G.in <- AddPlayer{}
-	o := <-G.out
+	o := G.AddPlayer()
 	switch o.(type) {
 	case Ok:
 		t.Error("Did not get lobby full on 11th player registered")
@@ -63,9 +62,8 @@ func TestHandling(t *testing.T) {
 		}
 	}
 
-	// Start the game
-	G.in <- Start{}
-	o = <-G.out
+	// start the game
+	o = G.Start()
 	var p, c int8
 	switch o.(type) {
 	case Ok:
@@ -88,8 +86,7 @@ func TestHandling(t *testing.T) {
 
 	// select the first chancellor (we select the player after the president)
 	c = (p + 1) % 10
-	G.in <- MakeChancellor{Caller: p, Proposal: c}
-	o = <-G.out
+	o = G.MakeChancellor(p, c)
 	switch o.(type) {
 	case Ok:
 		info := o.(Ok).Info
@@ -110,8 +107,7 @@ func TestHandling(t *testing.T) {
 
 	// send 9 out of 10 votes for yes to the gov.
 	for i := 0; i < 9; i++ {
-		G.in <- PlayerVote{Caller: int8(i), Vote: Ja}
-		o = <-G.out
+		o = G.Vote(int8(i), Ja)
 		switch o.(type) {
 		case Ok:
 			info := o.(Ok).Info
@@ -127,8 +123,7 @@ func TestHandling(t *testing.T) {
 	}
 
 	//send the last vote to elect the gov.
-	G.in <- PlayerVote{Caller: 9, Vote: Ja}
-	o = <-G.out
+	o = G.Vote(int8(9), Ja)
 	switch o.(type) {
 	case Ok:
 		info := o.(Ok).Info
@@ -153,8 +148,7 @@ func TestHandling(t *testing.T) {
 	}
 
 	// test the policy discard system for the president (we discard the middle card)
-	G.in <- PolicyDiscard{Caller: p, Selection: 1}
-	o = <-G.out
+	o = G.PolicyDiscard(p, 1)
 	switch o.(type) {
 	case Ok:
 		info := o.(Ok).Info
@@ -169,8 +163,7 @@ func TestHandling(t *testing.T) {
 		t.Error("Got error")
 	}
 	// test the policy discard system for the chancellor (we discard the first card)
-	G.in <- PolicyDiscard{Caller: c, Selection: 0}
-	o = <-G.out
+	o = G.PolicyDiscard(c, 0)
 	var enacted Policy
 	switch o.(type) {
 	case Ok:
@@ -188,8 +181,7 @@ func TestHandling(t *testing.T) {
 	}
 	// test the special power system
 	if enacted == FascistPolicy {
-		G.in <- SpecialPower{Caller: p, Selection: 0, Power: Investigate}
-		o = <-G.out
+		o = G.SpecialPower(p, Investigate, 0)
 		switch o.(type) {
 		case Ok:
 			info := o.(Ok).Info
@@ -206,8 +198,7 @@ func TestHandling(t *testing.T) {
 	}
 	// test term limits for government
 	c, p = p, c
-	G.in <- MakeChancellor{Caller: p, Proposal: c}
-	o = <-G.out
+	o = G.MakeChancellor(p, c)
 	switch o.(type) {
 	case Ok:
 		t.Error("Got Ok - expected error: Invalid")

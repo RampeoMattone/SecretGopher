@@ -2,8 +2,9 @@ package SecretGopher
 
 // Game is the interface to the event handler
 type Game struct {
-	in  chan<- Event
-	out <-chan Output
+	data gameData
+	in   chan input
+	out  chan Output
 }
 
 // GameState is a standalone type.
@@ -19,4 +20,78 @@ type GameState struct {
 	Votes           []Vote // Votes saves the votes for each player this round
 	Killed          []int8 // Killed is a set that memorizes the ids of dead players
 	Limited         []int8 // Limited is a set that memorizes the ids of limited players
+}
+
+// NewGame creates a game structure and subscribes a goroutine to listen to the events for the game
+func NewGame() Game {
+	G := Game{
+		data: gameData{
+			state:   waitingPlayers,
+			players: 0,
+			//deck:          // initialized later
+			president:  NotSet,
+			chancellor: NotSet,
+			//roles:         // initialized later
+			nextPresident: NotSet,
+			oldGov:        make([]int8, 2),
+			killed:        make([]int8, 2),
+			//investigated:  // initialized later
+			//votes:         // initialized later
+			voted: 0,
+			//policyChoice:  // initialized later
+			eTracker: 0,
+			fTracker: 0,
+			lTracker: 0,
+		},
+	}
+	G.subscribeHandler()
+	return G
+}
+
+func (g *Game) Start() Output {
+	g.in <- input{
+		gameData: &g.data,
+		event:    start{},
+	}
+	return <-g.out
+}
+
+func (g *Game) AddPlayer() Output {
+	g.in <- input{
+		gameData: &g.data,
+		event:    addPlayer{},
+	}
+	return <-g.out
+}
+
+func (g *Game) Vote(c int8, v Vote) Output {
+	g.in <- input{
+		gameData: &g.data,
+		event:    playerVote{Caller: c, Vote: v},
+	}
+	return <-g.out
+}
+
+func (g *Game) MakeChancellor(c, p int8) Output {
+	g.in <- input{
+		gameData: &g.data,
+		event:    makeChancellor{Caller: c, Proposal: p},
+	}
+	return <-g.out
+}
+
+func (g *Game) PolicyDiscard(c int8, s uint8) Output {
+	g.in <- input{
+		gameData: &g.data,
+		event:    policyDiscard{Caller: c, Selection: s},
+	}
+	return <-g.out
+}
+
+func (g *Game) SpecialPower(c int8, p SpecialPowers, s int8) Output {
+	g.in <- input{
+		gameData: &g.data,
+		event:    specialPower{Caller: c, Power: p, Selection: s},
+	}
+	return <-g.out
 }

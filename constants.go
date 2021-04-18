@@ -7,15 +7,15 @@ const (
 type state uint8 // state enumerates the possible round states
 
 const (
-	waitingPlayers        state = iota // waitingPlayers means the game is waiting a Start or an AddPlayer Event
-	chancellorCandidacy                // chancellorCandidacy means the game is waiting a MakeChancellor Event
-	governmentElection                 // governmentElection means the game is waiting a PlayerVote Event
-	presidentLegislation               // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
-	chancellorLegislation              // chancellorLegislation means the game is waiting a PolicyDiscard Event from the chancellor
-	specialPeek                        // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
-	specialInvestigate                 // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
-	specialElection                    // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
-	specialExecution                   // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
+	waitingPlayers        state = iota // waitingPlayers means the game is waiting a start or an addPlayer event
+	chancellorCandidacy                // chancellorCandidacy means the game is waiting a makeChancellor event
+	governmentElection                 // governmentElection means the game is waiting a playerVote event
+	presidentLegislation               // presidentLegislation means the game is waiting a policyDiscard event from the president
+	chancellorLegislation              // chancellorLegislation means the game is waiting a policyDiscard event from the chancellor
+	specialPeek                        // presidentLegislation means the game is waiting a policyDiscard event from the president
+	specialInvestigate                 // presidentLegislation means the game is waiting a policyDiscard event from the president
+	specialElection                    // presidentLegislation means the game is waiting a policyDiscard event from the president
+	specialExecution                   // presidentLegislation means the game is waiting a policyDiscard event from the president
 	vetoChancellor
 	vetoPresident
 	gameEnd

@@ -56,7 +56,7 @@ type (
 
 	// PolicyEnaction is an Ok type.
 	// PolicyEnaction means nobody won, but the Policy got enacted.
-	// If a special power has been activated, the SpecialPower field will let you know
+	// If a special power has been activated, the specialPower field will let you know
 	// PolicyEnaction also carries a pointer to a GameState
 	PolicyEnaction struct {
 		Enacted      Policy

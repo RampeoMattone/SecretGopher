@@ -4,16 +4,43 @@ import (
 	"math/rand"
 )
 
-// NewGame creates a game structure and subscribes a goroutine to listen to the events for the game
-func NewGame() Game {
-	in := make(chan Event)
+type handlerSubscription struct {
+	len uint
+	in  chan input
+	out chan Output
+}
+
+var handlerSubscriptions = make([]handlerSubscription, 0)
+var maxHandlerSubscriptions uint = 10
+
+func InitHandlerGroup(max uint) {
+	if max > 0 {
+		maxHandlerSubscriptions = max
+	} else {
+		panic("cannot use 0 as a max value in InitHandlerGroup")
+	}
+}
+
+func (g *Game) subscribeHandler() {
+	for _, handler := range handlerSubscriptions {
+		if handler.len <= maxHandlerSubscriptions {
+			g.in = handler.in
+			g.out = handler.out
+			handler.len++
+			return
+		}
+	}
+	in := make(chan input)
 	out := make(chan Output)
-	g := gameData{}
-	go g.handleGame(in, out)
-	return Game{
+	newHandler := handlerSubscription{
+		len: 0,
 		in:  in,
 		out: out,
 	}
+	g.in = in
+	g.out = out
+	go newHandler.handleGame()
+	handlerSubscriptions = append(handlerSubscriptions, newHandler)
 }
 
 type gameData struct {
@@ -177,30 +204,18 @@ func (g *gameData) shareState() GameState {
 }
 
 // handleGame handles the game events.
-func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
+func (h handlerSubscription) handleGame() {
+	in, out := h.in, h.out
 	defer close(out)
-	g = &gameData{
-		state:   waitingPlayers,
-		players: 0,
-		//deck:          // initialized with Start
-		president:  NotSet,
-		chancellor: NotSet,
-		//roles:         // initialized with Start
-		nextPresident: NotSet,
-		oldGov:        make([]int8, 2),
-		killed:        make([]int8, 2),
-		//investigated:  // initialized with Start
-		//votes:         // initialized with Start
-		voted: 0,
-		//policyChoice:  // initialized when entering presidentLegislation
-		eTracker: 0,
-		fTracker: 0,
-		lTracker: 0,
-	}
+	defer close(in)
+	var input input
+	var event event
+	var g *gameData
 	for {
-		event := <-in
+		input = <-in
+		event, g = input.event, input.gameData
 		switch event.(type) {
-		case AddPlayer:
+		case addPlayer:
 			// if the game is accepting players
 			if g.state == waitingPlayers {
 				if g.players < 10 {
@@ -212,7 +227,7 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 			} else {
 				out <- Error{Err: WrongPhase{}} // send out error
 			}
-		case Start:
+		case start:
 			// if the game was accepting players
 			if g.state == waitingPlayers {
 				if g.players >= 5 {
@@ -255,10 +270,10 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 			} else {
 				out <- Error{Err: WrongPhase{}} // send out error
 			}
-		case MakeChancellor:
+		case makeChancellor:
 			// if the game was accepting players
 			if g.state == chancellorCandidacy {
-				e := event.(MakeChancellor)
+				e := event.(makeChancellor)
 				if e.Caller == g.president {
 					if !search(g.oldGov, e.Proposal) {
 						g.chancellor = e.Proposal
@@ -275,8 +290,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 			} else {
 				out <- Error{Err: WrongPhase{}} // send out error
 			}
-		case PlayerVote:
-			e := event.(PlayerVote)
+		case playerVote:
+			e := event.(playerVote)
 			switch g.state {
 			case governmentElection:
 				// check that the vote is valid
@@ -308,7 +323,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 										Why:   o,
 										State: g.shareState(),
 									}}
-									return // end the game
+									h.len--
+									continue // end the game
 								}
 								g.state = presidentLegislation // next step is to let the president choose a card to discard
 								g.policyChoice = g.deck.draw(3)
@@ -321,7 +337,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 							} else {
 								g.inactiveGov(out) // gov was inactive, apply rules and effects
 								if g.state == gameEnd {
-									return // stops the handler
+									h.len--
+									continue
 								}
 							}
 						} else {
@@ -342,7 +359,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 					} else {
 						g.enactPolicyActive(out)
 						if g.state == gameEnd {
-							return // stops the handler
+							h.len--
+							continue
 						}
 					}
 				} else {
@@ -356,7 +374,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 						g.enactPolicyActive(out)
 					}
 					if g.state == gameEnd {
-						return // stops the handler
+						h.len--
+						continue
 					}
 				} else {
 					out <- Error{Err: Unauthorized{}} // send out error
@@ -364,8 +383,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 			default:
 				out <- Error{Err: WrongPhase{}} // send out error
 			}
-		case PolicyDiscard:
-			e := event.(PolicyDiscard)
+		case policyDiscard:
+			e := event.(policyDiscard)
 			switch g.state {
 			case presidentLegislation:
 				if e.Caller == g.president {
@@ -393,7 +412,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 						} else {
 							g.enactPolicyActive(out)
 							if g.state == gameEnd {
-								return // stops the handler
+								h.len--
+								continue
 							}
 						}
 					}
@@ -403,8 +423,8 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 			default:
 				out <- Error{Err: WrongPhase{}} // send out error
 			}
-		case SpecialPower:
-			e := event.(SpecialPower)
+		case specialPower:
+			e := event.(specialPower)
 			if e.Caller == g.president {
 				switch e.Power {
 				case Peek:
