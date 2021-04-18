@@ -9,7 +9,7 @@ type state uint8 // state enumerates the possible round states
 const (
 	waitingPlayers        state = iota // waitingPlayers means the game is waiting a Start or an AddPlayer Event
 	chancellorCandidacy                // chancellorCandidacy means the game is waiting a MakeChancellor Event
-	governmentElection                 // governmentElection means the game is waiting a GovernmentVote Event
+	governmentElection                 // governmentElection means the game is waiting a PlayerVote Event
 	presidentLegislation               // presidentLegislation means the game is waiting a PolicyDiscard Event from the president
 	chancellorLegislation              // chancellorLegislation means the game is waiting a PolicyDiscard Event from the chancellor
 	specialPeek                        // presidentLegislation means the game is waiting a PolicyDiscard Event from the president

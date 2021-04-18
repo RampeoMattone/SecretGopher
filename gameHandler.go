@@ -275,10 +275,10 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 			} else {
 				out <- Error{Err: WrongPhase{}} // send out error
 			}
-		case GovernmentVote:
-			// if the game is waiting for votes on the election
-			if g.state == governmentElection {
-				e := event.(GovernmentVote)
+		case PlayerVote:
+			e := event.(PlayerVote)
+			switch g.state {
+			case governmentElection:
 				// check that the vote is valid
 				if v := e.Vote; v == Ja || v == Nein {
 					// if the user hasn't voted yet
@@ -334,7 +334,34 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 				} else {
 					out <- Error{Err: Invalid{}} // invalid vote error
 				}
-			} else {
+			case vetoChancellor:
+				if e.Caller == g.chancellor {
+					if e.Vote == Ja {
+						g.state = vetoPresident
+						out <- Ok{Info: VetoRequest(g.shareState())}
+					} else {
+						g.enactPolicyActive(out)
+						if g.state == gameEnd {
+							return // stops the handler
+						}
+					}
+				} else {
+					out <- Error{Err: Unauthorized{}} // send out error
+				}
+			case vetoPresident:
+				if e.Caller == g.president {
+					if e.Vote == Ja {
+						g.inactiveGov(out) // gov was inactive, apply rules and effects
+					} else {
+						g.enactPolicyActive(out)
+					}
+					if g.state == gameEnd {
+						return // stops the handler
+					}
+				} else {
+					out <- Error{Err: Unauthorized{}} // send out error
+				}
+			default:
 				out <- Error{Err: WrongPhase{}} // send out error
 			}
 		case PolicyDiscard:
@@ -369,39 +396,6 @@ func (g *gameData) handleGame(in <-chan Event, out chan<- Output) {
 								return // stops the handler
 							}
 						}
-					}
-				} else {
-					out <- Error{Err: Unauthorized{}} // send out error
-				}
-			default:
-				out <- Error{Err: WrongPhase{}} // send out error
-			}
-		case VetoResponse:
-			e := event.(VetoResponse)
-			switch g.state {
-			case vetoChancellor:
-				if e.Caller == g.chancellor {
-					if e.Approves {
-						g.state = vetoPresident
-						out <- Ok{Info: VetoRequest(g.shareState())}
-					} else {
-						g.enactPolicyActive(out)
-						if g.state == gameEnd {
-							return // stops the handler
-						}
-					}
-				} else {
-					out <- Error{Err: Unauthorized{}} // send out error
-				}
-			case vetoPresident:
-				if e.Caller == g.president {
-					if e.Approves {
-						g.inactiveGov(out) // gov was inactive, apply rules and effects
-					} else {
-						g.enactPolicyActive(out)
-					}
-					if g.state == gameEnd {
-						return // stops the handler
 					}
 				} else {
 					out <- Error{Err: Unauthorized{}} // send out error

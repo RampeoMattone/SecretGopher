@@ -19,9 +19,9 @@ type (
 		Proposal int8
 	}
 
-	// GovernmentVote is an Event type.
-	// GovernmentVote says that player 'Caller' has voted 'Vote'
-	GovernmentVote struct {
+	// PlayerVote is an Event type.
+	// PlayerVote says that player 'Caller' has voted 'Vote' on either an election or a veto
+	PlayerVote struct {
 		Caller int8
 		Vote   Vote
 	}
@@ -32,16 +32,6 @@ type (
 	PolicyDiscard struct {
 		Caller    int8
 		Selection uint8
-	}
-
-	// VetoResponse is an Event type.
-	// VetoResponse reports what 'Caller' has decided to do in front of a veto.
-	// VetoResponse needs to first be sent by the chancellor and then, if necessary, by the president
-	// The handler will answer to the event with either a new VetoRequest (signaling that it needs confirmation from the president)
-	// or with other types that signal the success or failure of the veto and its implications
-	VetoResponse struct {
-		Caller   int8
-		Approves bool
 	}
 
 	// SpecialPower is an Event type.

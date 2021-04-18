@@ -110,7 +110,7 @@ func TestHandling(t *testing.T) {
 
 	// send 9 out of 10 votes for yes to the gov.
 	for i := 0; i < 9; i++ {
-		G.in <- GovernmentVote{Caller: int8(i), Vote: Ja}
+		G.in <- PlayerVote{Caller: int8(i), Vote: Ja}
 		o = <-G.out
 		switch o.(type) {
 		case Ok:
@@ -127,7 +127,7 @@ func TestHandling(t *testing.T) {
 	}
 
 	//send the last vote to elect the gov.
-	G.in <- GovernmentVote{Caller: 9, Vote: Ja}
+	G.in <- PlayerVote{Caller: 9, Vote: Ja}
 	o = <-G.out
 	switch o.(type) {
 	case Ok:
