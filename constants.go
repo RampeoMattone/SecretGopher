@@ -74,7 +74,3 @@ const (
 	FascistPolicyWin               // FascistPolicyWin means 6 fascist policies have been enacted
 	FascistElectionWin             // FascistElectionWin means hitler was elected as chancellor
 )
-
-type ErrorType int8
-
-const ()
