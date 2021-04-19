@@ -2,12 +2,14 @@ package SecretGopher
 
 import (
 	"math/rand"
+	"sync"
 )
 
 type handlerSubscription struct {
-	len uint
-	in  chan input
-	out chan Output
+	lenMut *sync.Mutex
+	len    uint
+	in     chan input
+	out    chan Output
 }
 
 var handlerSubscriptions = make([]handlerSubscription, 0)
@@ -23,24 +25,34 @@ func InitHandlerGroup(max uint) {
 
 func (g *Game) subscribeHandler() {
 	for _, handler := range handlerSubscriptions {
+		handler.lenMut.Lock()
 		if handler.len <= maxHandlerSubscriptions {
 			g.in = handler.in
 			g.out = handler.out
 			handler.len++
+			handler.lenMut.Unlock()
 			return
 		}
+		handler.lenMut.Unlock()
 	}
 	in := make(chan input)
 	out := make(chan Output)
 	newHandler := handlerSubscription{
-		len: 0,
-		in:  in,
-		out: out,
+		lenMut: new(sync.Mutex),
+		len:    0,
+		in:     in,
+		out:    out,
 	}
 	g.in = in
 	g.out = out
 	go newHandler.handleGame()
 	handlerSubscriptions = append(handlerSubscriptions, newHandler)
+}
+
+func (h *handlerSubscription) unsubscribeHandler() {
+	h.lenMut.Lock()
+	defer h.lenMut.Unlock()
+	h.len--
 }
 
 type gameData struct {
@@ -204,7 +216,7 @@ func (g *gameData) shareState() GameState {
 }
 
 // handleGame handles the game events.
-func (h handlerSubscription) handleGame() {
+func (h *handlerSubscription) handleGame() {
 	in, out := h.in, h.out
 	defer close(out)
 	defer close(in)
@@ -323,7 +335,7 @@ func (h handlerSubscription) handleGame() {
 										Why:   o,
 										State: g.shareState(),
 									}}
-									h.len--
+									h.unsubscribeHandler()
 									continue // end the game
 								}
 								g.state = presidentLegislation // next step is to let the president choose a card to discard
@@ -337,7 +349,7 @@ func (h handlerSubscription) handleGame() {
 							} else {
 								g.inactiveGov(out) // gov was inactive, apply rules and effects
 								if g.state == gameEnd {
-									h.len--
+									h.unsubscribeHandler()
 									continue
 								}
 							}
@@ -359,7 +371,7 @@ func (h handlerSubscription) handleGame() {
 					} else {
 						g.enactPolicyActive(out)
 						if g.state == gameEnd {
-							h.len--
+							h.unsubscribeHandler()
 							continue
 						}
 					}
@@ -374,7 +386,7 @@ func (h handlerSubscription) handleGame() {
 						g.enactPolicyActive(out)
 					}
 					if g.state == gameEnd {
-						h.len--
+						h.unsubscribeHandler()
 						continue
 					}
 				} else {
@@ -412,7 +424,7 @@ func (h handlerSubscription) handleGame() {
 						} else {
 							g.enactPolicyActive(out)
 							if g.state == gameEnd {
-								h.len--
+								h.unsubscribeHandler()
 								continue
 							}
 						}
